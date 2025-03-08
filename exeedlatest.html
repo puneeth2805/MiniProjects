@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Parking System</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            margin-top: 20px;
+        }
+
+        .header {
+            background-color: #343a40;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .weather-widget {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 5px 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+
+        .parking-spot {
+            margin: 10px;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            text-align: center;
+            transition: transform 0.3s, box-shadow 0.3s;
+            position: relative;
+        }
+
+        .parking-spot:hover {
+            transform: scale(1.05);
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .occupied {
+            background-color: #f44336;
+            color: white;
+        }
+
+        .available {
+            background-color: #4caf50;
+            color: white;
+        }
+
+        .filter-button {
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        .options {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .booking-modal, .payment-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+
+        .modal-content {
+            background-color: #fff;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 10px;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .signin-page, .signup-page, .home-page, .parking-page, .dashboard,
+        .profile, .feedback-page, .vehicle-management, .subscription-plans {
+            display: none;
+        }
+
+        .signin-page.active, .signup-page.active, .home-page.active,
+        .parking-page.active, .dashboard.active, .profile.active,
+        .feedback-page.active, .vehicle-management.active, .subscription-plans.active {
+            display: block;
+        }
+
+        .home-page-content {
+            text-align: center;
+        }
+
+        .back-button {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            z-index: 1000;
+        }
+
+        .navigation {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .navigation button {
+            margin: 0 5px;
+        }
+
+        .vehicle-management, .subscription-plans {
+            margin: 20px 0;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+        }
+
+        .card {
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .price {
+            font-size: 1.5em;
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .vehicle-card {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin: 10px;
+            border-radius: 8px;
+        }
+
+        #parkingMap {
+            height: 300px;
+            margin: 20px 0;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Smart Parking System</h1>
+            <p>Manage and monitor parking spots with ease</p>
+            <div class="weather-widget">
+                <span id="weatherInfo">Loading weather...</span>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="navigation">
+            <button class="btn btn-primary" onclick="showPage('homePage')">Home</button>
+            <button class="btn btn-info" onclick="showPage('dashboard')">Dashboard</button>
+            <button class="btn btn-secondary" onclick="showPage('profile')">Profile</button>
+            <button class="btn btn-warning" onclick="showPage('feedback-page')">Feedback</button>
+            <button class="btn btn-success" onclick="showPage('vehicleManagement')">Vehicles</button>
+            <button class="btn btn-info" onclick="showPage('subscriptionPlans')">Subscriptions</button>
+        </div>
+
+        <!-- Home Page -->
+        <div id="homePage" class="home-page active">
+            <div class="text-center">
+                <h2>Welcome to Smart Parking System</h2>
+                <img src="smart-parking.jpeg" alt="Parking Image">
+                <div>
+                    <button class="btn btn-primary" onclick="showSigninPage()">Sign In</button>
+                    <button class="btn btn-secondary" onclick="showSignupPage()">Sign Up</button>
+                </div>
+                <h3>Select Location</h3>
+                <select id="locationSelect" class="form-control" onchange="selectLocation()">
+                    <option value="">Select a Location</option>
+                    <option value="Banjara Hills">Banjara Hills</option>
+                    <option value="Gachibowli">Gachibowli</option>
+                    <option value="Hitech City">Hitech City</option>
+                    <option value="Madhapur">Madhapur</option>
+                    <option value="Jubilee Hills">Jubilee Hills</option>
+                    <option value="Kondapur">Kondapur</option>
+                    <option value="Begumpet">Begumpet</option>
+                    <option value="Secunderabad">Secunderabad</option>
+                    <option value="Ameerpet">Ameerpet</option>
+                    <option value="Kukatpally">Kukatpally</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Sign In Page -->
+        <div id="signinPage" class="signin-page">
+            <div class="text-center">
+                <h2>Sign In</h2>
+                <form id="signinForm" onsubmit="return signin()">
+                    <div class="form-group">
+                        <input type="text" id="signinUsername" class="form-control" placeholder="Username" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="password" id="signinPassword" class="form-control" placeholder="Password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Sign In</button>
+                </form>
+            </div>
+        </div>
+
+
+        <!-- Vehicle Management -->
+        <div id="vehicleManagement" class="vehicle-management">
+            <h2>Vehicle Management</h2>
+            <button class="btn btn-primary mb-3" onclick="showAddVehicleModal()">Add New Vehicle</button>
+            <div id="vehiclesList" class="row">
+                <!-- Vehicles will be loaded here -->
+            </div>
+        </div>
+
+        <!-- Subscription Plans -->
+        <div id="subscriptionPlans" class="subscription-plans">
+            <h2>Parking Subscription Plans</h2>
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Monthly Pass</h5>
+                            <p class="card-text">Unlimited parking for 30 days</p>
+                            <p class="price">₹2000/month</p>
+                            <button class="btn btn-primary" onclick="subscribePlan('monthly')">Subscribe</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Quarterly Pass</h5>
+                            <p class="card-text">Unlimited parking for 90 days</p>
+                            <p class="price">₹5000/quarter</p>
+                            <button class="btn btn-primary" onclick="subscribePlan('quarterly')">Subscribe</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Annual Pass</h5>
+                            <p class="card-text">Unlimited parking for 365 days</p>
+                            <p class="price">₹18000/year</p>
+                            <button class="btn btn-primary" onclick="subscribePlan('annual')">Subscribe</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Vehicle Modal -->
+        <div id="addVehicleModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeAddVehicleModal()">&times;</span>
+                <h2>Add New Vehicle</h2>
+                <form id="addVehicleForm" onsubmit="return addVehicle()">
+                    <div class="form-group">
+                        <label for="vehicleNumber">Vehicle Number</label>
+                        <input type="text" class="form-control" id="vehicleNumber" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="vehicleType">Vehicle Type</label>
+                        <select class="form-control" id="vehicleType" required>
+                            <option value="2-wheeler">2 Wheeler</option>
+                            <option value="4-wheeler">4 Wheeler</option>
+                            <option value="ev">Electric Vehicle</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Add Vehicle</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Sign In Page -->
+        <div id="signinPage" class="signin-page">
+            <div class="text-center">
+                <h2>Sign In</h2>
+                <form id="signinForm" onsubmit="return signin()">
+                    <div class="form-group">
+                        <input type="text" id="signinUsername" class="form-control" placeholder="Username" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="password" id="signinPassword" class="form-control" placeholder="Password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Sign In</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Sign Up Page -->
+        <div id="signupPage" class="signup-page">
+            <div class="text-center">
+                <h2>Sign Up</h2>
+                <form id="signupForm" onsubmit="return signup()">
+                    <div class="form-group">
+                        <input type="text" id="signupUsername" class="form-control" placeholder="Username" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="password" id="signupPassword" class="form-control" placeholder="Password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Sign Up</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Dashboard -->
+        <div id="dashboard" class="dashboard">
+            <h2>Dashboard</h2>
+            <p>Welcome, <span id="userName">User</span></p>
+            <h4>Booking History</h4>
+            <ul id="bookingHistory">
+                <li>No bookings made yet.</li>
+            </ul>
+        </div>
+
+        <!-- Profile Section -->
+        <div id="profile" class="profile">
+            <h2>Profile</h2>
+            <form id="profileForm">
+                <div class="form-group">
+                    <label for="profileName">Name</label>
+                    <input type="text" class="form-control" id="profileName" placeholder="Enter your name">
+                </div>
+                <div class="form-group">
+                    <label for="profileEmail">Email</label>
+                    <input type="email" class="form-control" id="profileEmail" placeholder="Enter your email">
+                </div>
+                <button type="button" class="btn btn-success" onclick="updateProfile()">Update Profile</button>
+            </form>
+        </div>
+
+        <!-- Feedback Section -->
+        <div id="feedback-page" class="feedback-page">
+            <h2>Feedback</h2>
+            <form id="feedbackForm">
+                <div class="form-group">
+                    <label for="feedbackMessage">Your Feedback</label>
+                    <textarea class="form-control" id="feedbackMessage" rows="4" placeholder="Share your experience"></textarea>
+                </div>
+                <button type="button" class="btn btn-primary" onclick="submitFeedback()">Submit Feedback</button>
+            </form>
+        </div>
+
+        <!-- Parking Page -->
+        <div id="parkingPage" class="parking-page">
+            <button class="btn btn-secondary back-button" onclick="goHome()">Back to Home</button>
+            <div class="options">
+                <div>
+                    <button class="btn btn-primary filter-button" onclick="filterSpots('all')">All Spots</button>
+                    <button class="btn btn-success filter-button" onclick="filterSpots('available')">Available Spots</button>
+                    <button class="btn btn-danger filter-button" onclick="filterSpots('occupied')">Occupied Spots</button>
+                </div>
+                <div>
+                    <button class="btn btn-info filter-button" onclick="sortSpots('name')">Sort by Name</button>
+                    <button class="btn btn-warning filter-button" onclick="sortSpots('status')">Sort by Status</button>
+                </div>
+            </div>
+            <div id="parking-lot" class="row"></div>
+        </div>
+    </div>
+
+    <!-- Booking Modal -->
+    <div id="bookingModal" class="booking-modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2>Book Parking Spot</h2>
+            <form id="bookingForm" onsubmit="return bookSpot()">
+                <div class="form-group">
+                    <label for="spotName">Spot Name</label>
+                    <input type="text" class="form-control" id="spotName" readonly>
+                </div>
+                <div class="form-group">
+                    <label for="timeSlot">Time Slot</label>
+                    <select class="form-control" id="timeSlot" required onchange="updatePaymentAmount()">
+                        <option value="1">1 Hour</option>
+                        <option value="2">2 Hours</option>
+                        <option value="3">3 Hours</option>
+                        <option value="4">4 Hours</option>
+                        <option value="5">5 Hours</option>
+                        <option value="6">6 Hours</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="startTime">Start Time</label>
+                    <input type="datetime-local" class="form-control" id="startTime" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Proceed to Payment</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Payment Modal -->
+    <div id="paymentModal" class="payment-modal">
+        <div class="modal-content">
+            <span class="close" onclick="closePaymentModal()">&times;</span>
+            <h2>Payment Options</h2>
+            <form id="paymentForm" onsubmit="return completePayment()">
+                <div class="form-group">
+                    <label for="paymentAmount">Amount (₹)</label>
+                    <input type="text" class="form-control" id="paymentAmount" readonly>
+                </div>
+                <div class="form-group">
+                    <label for="paymentMethod">Payment Method</label>
+                    <select class="form-control" id="paymentMethod" required>
+                        <option value="cash">Cash</option>
+                        <option value="card">Card</option>
+                        <option value="upi">UPI</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">Complete Payment</button>
+            </form>
+        </div>
+    </div>
+    </div>
+
+    <script>
+        // Existing variables
+        const parkingSpots = [
+            { id: 1, name: 'Spot A', status: 'occupied' },
+            { id: 2, name: 'Spot B', status: 'available'},
+            { id: 3, name: 'Spot C', status: 'occupied' },
+            { id: 4, name: 'Spot D', status: 'available'},
+            { id: 5, name: 'Spot E', status: 'occupied'},
+            { id: 6, name: 'Spot F', status: 'available'},
+            { id: 7, name: 'Spot G', status: 'occupied'},
+            { id: 8, name: 'Spot H', status: 'available'}
+        ];
+        let bookingHistory = [];
+        let userVehicles = [];
+        let subscriptions = [];
+
+        // Weather API integration
+        function updateWeather() {
+            const locations = {
+                'Banjara Hills': { temp: '32°C', condition: 'Sunny' },
+                'Gachibowli': { temp: '30°C', condition: 'Cloudy' },
+                'Hitech City': { temp: '31°C', condition: 'Partly Cloudy' }
+            };
+            const location = document.getElementById('locationSelect').value;
+            const weather = locations[location] || { temp: '31°C', condition: 'Sunny' };
+            document.getElementById('weatherInfo').textContent =
+                `Weather at ${location}: ${weather.temp} - ${weather.condition}`;
+        }
+
+        // Vehicle Management Functions
+        function showAddVehicleModal() {
+            document.getElementById('addVehicleModal').style.display = 'block';
+        }
+
+        function closeAddVehicleModal() {
+            document.getElementById('addVehicleModal').style.display = 'none';
+        }
+
+        function addVehicle() {
+            const number = document.getElementById('vehicleNumber').value;
+            const type = document.getElementById('vehicleType').value;
+            
+            const newVehicle = {
+                id: Date.now(),
+                number: number,
+                type: type,
+                addedDate: new Date().toLocaleDateString()
+            };
+
+            userVehicles.push(newVehicle);
+            updateVehiclesList();
+            closeAddVehicleModal();
+            return false;
+        }
+
+        function updateVehiclesList() {
+            const vehiclesList = document.getElementById('vehiclesList');
+            vehiclesList.innerHTML = userVehicles.map(vehicle => `
+                <div class="col-md-4">
+                    <div class="vehicle-card">
+                        <h4>${vehicle.number}</h4>
+                        <p>Type: ${vehicle.type}</p>
+                        <p>Added: ${vehicle.addedDate}</p>
+                        <button class="btn btn-danger btn-sm" onclick="removeVehicle(${vehicle.id})">Remove</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function removeVehicle(id) {
+            if (confirm('Are you sure you want to remove this vehicle?')) {
+                userVehicles = userVehicles.filter(v => v.id !== id);
+                updateVehiclesList();
+            }
+        }
+
+        // Subscription Management
+        function subscribePlan(plan) {
+            const plans = {
+                monthly: { price: 2000, duration: '30 days' },
+                quarterly: { price: 5000, duration: '90 days' },
+                annual: { price: 18000, duration: '365 days' }
+            };
+
+            if (confirm(`Confirm subscription for ${plan} plan at ₹${plans[plan].price}?`)) {
+                const subscription = {
+                    plan: plan,
+                    startDate: new Date().toLocaleDateString(),
+                    endDate: new Date(Date.now() + parseInt(plans[plan].duration) * 24 * 60 * 60 * 1000).toLocaleDateString(),
+                    price: plans[plan].price
+                };
+                
+                subscriptions.push(subscription);
+                alert('Subscription activated successfully!');
+                updateDashboard();
+            }
+        }
+
+        // Enhanced updateDashboard function
+        function updateDashboard() {
+            // Update booking history
+            updateBookingHistory();
+
+            // Add subscription information
+            if (subscriptions.length > 0) {
+                const latestSub = subscriptions[subscriptions.length - 1];
+                const subscriptionInfo = `
+                    <h4>Active Subscription</h4>
+                    <p>${latestSub.plan.charAt(0).toUpperCase() + latestSub.plan.slice(1)} Plan</p>
+                    <p>Valid until: ${latestSub.endDate}</p>
+                `;
+                document.getElementById('dashboard').insertAdjacentHTML('beforeend', subscriptionInfo);
+            }
+        }
+
+        // Updated showPage function
+        function showPage(pageId) {
+            const pages = [
+                'homePage', 'dashboard', 'profile', 'feedback-page',
+                'parkingPage', 'signinPage', 'signupPage',
+                'vehicleManagement', 'subscriptionPlans'
+            ];
+            pages.forEach(page => {
+                document.getElementById(page)?.classList.remove('active');
+            });
+            document.getElementById(pageId)?.classList.add('active');
+
+            if (pageId === 'vehicleManagement') {
+                updateVehiclesList();
+            }
+            if (pageId === 'dashboard') {
+                updateDashboard();
+            }
+        }
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', () => {
+            loadParkingSpots();
+            updateBookingHistory();
+            updateWeather();
+            document.getElementById('locationSelect').addEventListener('change', updateWeather);
+        });
+
+         function showPage(pageId) {
+            const pages = ['homePage', 'dashboard', 'profile', 'feedback-page', 'parkingPage', 'signinPage', 'signupPage'];
+            pages.forEach(page => {
+                document.getElementById(page)?.classList.remove('active');
+            });
+            document.getElementById(pageId)?.classList.add('active');
+        }
+
+        function showSigninPage() {
+            showPage('signinPage');
+        }
+
+        function showSignupPage() {
+            showPage('signupPage');
+        }
+
+        function goHome() {
+            showPage('homePage');
+        }
+
+        function signin() {
+            const username = document.getElementById('signinUsername').value;
+            document.getElementById('userName').textContent = username;
+            showPage('homePage');
+            return false;
+        }
+
+        function signup() {
+            const username = document.getElementById('signupUsername').value;
+            document.getElementById('userName').textContent = username;
+            showPage('homePage');
+            return false;
+        }
+
+        function selectLocation() {
+            const selectedLocation = document.getElementById('locationSelect').value;
+            if (selectedLocation) {
+                showPage('parkingPage');
+                loadParkingSpots();
+            }
+        }
+
+        function loadParkingSpots() {
+            const parkingLot = document.getElementById('parking-lot');
+            parkingLot.innerHTML = '';
+            parkingSpots.forEach(spot => {
+                const spotElement = document.createElement('div');
+                spotElement.classList.add('col-md-4', 'parking-spot', spot.status);
+                spotElement.innerHTML = `
+                    <h3>${spot.name}</h3>
+                    <p>Status: ${spot.status}</p>
+                    <button class="btn btn-info" onclick="openBookingModal(${spot.id})" ${spot.status === 'occupied' ? 'disabled' : ''}>Book</button>
+                    <button class="btn btn-secondary" onclick="navigateToSpot(${spot.id})">Navigate</button>
+                `;
+                parkingLot.appendChild(spotElement);
+            });
+        }
+
+        function filterSpots(filter) {
+            let filteredSpots = filter === 'all' ? parkingSpots :
+                parkingSpots.filter(spot => spot.status === filter);
+            loadFilteredSpots(filteredSpots);
+        }
+
+        function sortSpots(criteria) {
+            let sortedSpots;
+            if (criteria === 'name') {
+                sortedSpots = [...parkingSpots].sort((a, b) => a.name.localeCompare(b.name));
+            } else {
+                sortedSpots = [...parkingSpots].sort((a, b) => a.status.localeCompare(b.status));
+            }
+            loadFilteredSpots(sortedSpots);
+        }
+
+        function loadFilteredSpots(spots) {
+            const parkingLot = document.getElementById('parking-lot');
+            parkingLot.innerHTML = '';
+            spots.forEach(spot => {
+                const spotElement = document.createElement('div');
+                spotElement.classList.add('col-md-4', 'parking-spot', spot.status);
+                spotElement.innerHTML = `
+                    <h3>${spot.name}</h3>
+                    <p>Status: ${spot.status}</p>
+                    <button class="btn btn-info" onclick="openBookingModal(${spot.id})" ${spot.status === 'occupied' ? 'disabled' : ''}>Book</button>
+                    <button class="btn btn-secondary" onclick="navigateToSpot(${spot.id})">Navigate</button>
+                `;
+                parkingLot.appendChild(spotElement);
+            });
+        }
+
+        let selectedSpot = null;
+       
+        function openBookingModal(spotId) {
+            selectedSpot = parkingSpots.find(spot => spot.id === spotId);
+            if (selectedSpot.status === 'occupied') {
+                alert('This spot is already occupied');
+                return;
+            }
+            document.getElementById('spotName').value = selectedSpot.name;
+            document.getElementById('bookingModal').style.display = 'block';
+            updatePaymentAmount();
+        }
+
+        function closeModal() {
+            document.getElementById('bookingModal').style.display = 'none';
+        }
+
+        function closePaymentModal() {
+            document.getElementById('paymentModal').style.display = 'none';
+        }
+
+        function updatePaymentAmount() {
+            const timeSlot = document.getElementById('timeSlot').value;
+            const amount = timeSlot * 50; // ₹50 per hour
+            document.getElementById('paymentAmount').value = `₹${amount}`;
+        }
+
+        function bookSpot() {
+            const timeSlot = document.getElementById('timeSlot').value;
+            const startTime = document.getElementById('startTime').value;
+
+            if (!startTime) {
+                alert('Please select a start time.');
+                return false;
+            }
+
+            // Proceed to payment
+            document.getElementById('bookingModal').style.display = 'none';
+            openPaymentModal(timeSlot);
+            return false;
+        }
+
+        function openPaymentModal(timeSlot) {
+            const amount = timeSlot * 50; // ₹50 per hour
+            document.getElementById('paymentAmount').value = `₹${amount}`;
+            document.getElementById('paymentModal').style.display = 'block';
+        }
+
+        function completePayment() {
+            const paymentMethod = document.getElementById('paymentMethod').value;
+            const paymentAmount = document.getElementById('paymentAmount').value;
+            const timeSlot = document.getElementById('timeSlot').value;
+            const startTime = document.getElementById('startTime').value;
+
+            // Add booking to history
+            const booking = {
+                spotName: selectedSpot.name,
+                startTime: startTime,
+                duration: timeSlot,
+                amount: paymentAmount,
+                paymentMethod: paymentMethod
+            };
+           
+            bookingHistory.unshift(booking);
+            updateBookingHistory();
+
+            // Update spot status
+            selectedSpot.status = 'occupied';
+            loadParkingSpots();
+
+            // Show success message
+            alert(`Payment of ${paymentAmount} completed using ${paymentMethod}`);
+            closePaymentModal();
+            return false;
+        }
+
+        function updateBookingHistory() {
+            const historyList = document.getElementById('bookingHistory');
+            if (bookingHistory.length === 0) {
+                historyList.innerHTML = '<li>No bookings made yet.</li>';
+                return;
+            }
+
+            historyList.innerHTML = bookingHistory.map(booking => `
+                <li>
+                    ${booking.spotName} - ${new Date(booking.startTime).toLocaleString()}
+                    <br>Duration: ${booking.duration} hour(s)
+                    <br>Amount: ${booking.amount}
+                    <br>Payment: ${booking.paymentMethod}
+                </li>
+            `).join('');
+        }
+
+        function navigateToSpot(spotId) {
+            const location = document.getElementById('locationSelect').value;
+            const url = `https://www.google.com/maps/search/?api=1&query=${location}+parking+spot+${spotId}`;
+            window.open(url, '_blank');
+        }
+
+        function updateProfile() {
+            const name = document.getElementById('profileName').value;
+            const email = document.getElementById('profileEmail').value;
+            if (name && email) {
+                document.getElementById('userName').textContent = name;
+                alert('Profile updated successfully!');
+            } else {
+                alert('Please fill in all fields.');
+            }
+        }
+
+        function submitFeedback() {
+            const feedback = document.getElementById('feedbackMessage').value;
+            if (feedback) {
+                alert('Thank you for your feedback!');
+                document.getElementById('feedbackMessage').value = '';
+            } else {
+                alert('Please enter your feedback.');
+            }
+        }
+
+    </script>
+</body>
+</html>
